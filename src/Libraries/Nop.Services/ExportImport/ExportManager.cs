@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Xml;
 using Nop.Core;
@@ -209,6 +210,97 @@ namespace Nop.Services.ExportImport
             return !productAdvancedMode && !func(_productEditorSettings);
         }
 
+        private byte[] InsertProductAtributs(byte[] data, IEnumerable<Product> products)
+        {
+            using (var inputStream = new MemoryStream(data))
+            {
+                using (var inputPackage = new ExcelPackage(inputStream))
+                {
+                    // get the first worksheet in the workbook
+                    var worksheet = inputPackage.Workbook.Worksheets.FirstOrDefault();
+
+                    if (worksheet == null)
+                        throw new NopException("No worksheet found");
+
+                    var properties = new[]
+                    {
+                        new PropertyByName<ExportProducAttribut>("AttributeId", p => p.AttributeId),
+                        new PropertyByName<ExportProducAttribut>("AttributName", p => p.AttributName),
+                        new PropertyByName<ExportProducAttribut>("AttributeControlTypeId", p => p.AttributeControlTypeId),
+                        new PropertyByName<ExportProducAttribut>("ProductAttributeValuesId", p => p.Id),
+                        new PropertyByName<ExportProducAttribut>("ValueName", p => p.Name),
+                        new PropertyByName<ExportProducAttribut>("AttributeValueTypeId", p => p.AttributeValueTypeId),
+                        new PropertyByName<ExportProducAttribut>("ColorSquaresRgb", p => p.ColorSquaresRgb),
+                        new PropertyByName<ExportProducAttribut>("ImageSquaresPictureId", p => p.ImageSquaresPictureId),
+                        new PropertyByName<ExportProducAttribut>("PriceAdjustment", p => p.PriceAdjustment),
+                        new PropertyByName<ExportProducAttribut>("WeightAdjustment", p => p.WeightAdjustment),
+                        new PropertyByName<ExportProducAttribut>("Cost", p => p.Cost),
+                        new PropertyByName<ExportProducAttribut>("Quantity", p => p.Quantity),
+                        new PropertyByName<ExportProducAttribut>("IsPreSelected", p => p.IsPreSelected),
+                        new PropertyByName<ExportProducAttribut>("DisplayOrder", p => p.DisplayOrder),
+                        new PropertyByName<ExportProducAttribut>("PictureId", p => p.PictureId)
+                    };
+
+                    var manager = new PropertyManager<ExportProducAttribut>(properties);
+
+                    var row = 2;
+
+                    foreach (var product in products)
+                    {
+                        row++;
+
+                        var atributes = product.ProductAttributeMappings.SelectMany(pam => pam.ProductAttributeValues.Select(pav => new ExportProducAttribut
+                        {
+                            AttributeId = pam.ProductAttribute.Id,
+                            AttributName = pam.ProductAttribute.Name,
+                            AttributeControlTypeId = pam.AttributeControlTypeId,
+                            Id = pav.Id,
+                            Name = pav.Name,
+                            AttributeValueTypeId = pav.AttributeValueTypeId,
+                            ColorSquaresRgb = pav.ColorSquaresRgb,
+                            ImageSquaresPictureId = pav.ImageSquaresPictureId,
+                            PriceAdjustment = pav.PriceAdjustment,
+                            WeightAdjustment = pav.WeightAdjustment,
+                            Cost = pav.Cost,
+                            Quantity = pav.Quantity,
+                            IsPreSelected = pav.IsPreSelected,
+                            DisplayOrder = pav.DisplayOrder,
+                            PictureId = pav.PictureId
+                        })).ToList();
+
+                        if(!atributes.Any())
+                            continue;
+
+                        worksheet.InsertRow(row, atributes.Count+1);
+                        manager.WriteCaption(worksheet, SetCaptionStyle, row, 2);
+                        worksheet.Row(row).OutlineLevel = 1;
+                        worksheet.Row(row).Collapsed = true;
+
+                        foreach (var exportProducAttribut in atributes)
+                        {
+                            row++;
+                            manager.CurrentObject = exportProducAttribut;
+                            manager.WriteToXlsx(worksheet, row, 2);
+                            worksheet.Row(row).OutlineLevel = 1;
+                            worksheet.Row(row).Collapsed = true;
+                        }
+
+                        row++;
+                    }
+
+                    using (var outputStream = new MemoryStream())
+                    {
+                        using (var outputPackage = new ExcelPackage(outputStream))
+                        {
+                            outputPackage.Workbook.Worksheets.Add(worksheet.Name, worksheet);
+                            outputPackage.Save();
+                        }
+                        return outputStream.ToArray();
+                    }
+                }
+            }
+
+        }
         #endregion
 
         #region Methods
@@ -769,7 +861,9 @@ namespace Nop.Services.ExportImport
                 new PropertyByName<Product>("Picture3", p => GetPictures(p)[2])
             };
 
-            return ExportToXlsx(properties, products);
+            var productList = products.ToList();
+
+            return InsertProductAtributs(ExportToXlsx(properties, productList), productList);
         }
 
         /// <summary>
@@ -1147,5 +1241,24 @@ namespace Nop.Services.ExportImport
         }
 
         #endregion
+    }
+
+    class ExportProducAttribut 
+    {
+        public int AttributeId { get; set; }
+        public string AttributName { get; set; }
+        public int PictureId { get; set; }
+        public int AttributeControlTypeId { get; set; }
+        public int AttributeValueTypeId { get; set; }
+        public int Id { get; set; }
+        public int ImageSquaresPictureId { get; set; }
+        public string Name { get; set; }
+        public decimal WeightAdjustment { get; set; }
+        public int Quantity { get; set; }
+        public bool IsPreSelected { get; set; }
+        public string ColorSquaresRgb { get; set; }
+        public decimal PriceAdjustment { get; set; }
+        public decimal Cost { get; set; }
+        public int DisplayOrder { get; set; }
     }
 }

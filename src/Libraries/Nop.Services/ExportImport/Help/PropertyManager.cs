@@ -72,14 +72,15 @@ namespace Nop.Services.ExportImport.Help
         /// </summary>
         /// <param name="worksheet">worksheet</param>
         /// <param name="row">Row index</param>
-        public void WriteToXlsx(ExcelWorksheet worksheet, int row)
+        /// <param name="cellOffset">Cell ofset</param>
+        public void WriteToXlsx(ExcelWorksheet worksheet, int row, int cellOffset = 0)
         {
             if (CurrentObject == null)
                 return;
-
+            
             foreach (var prop in _properties.Values)
             {
-                worksheet.Cells[row, prop.PropertyOrderPosition].Value = prop.GetProperty(CurrentObject);
+                worksheet.Cells[row, prop.PropertyOrderPosition + cellOffset].Value = prop.GetProperty(CurrentObject);
             }
         }
 
@@ -104,11 +105,13 @@ namespace Nop.Services.ExportImport.Help
         /// </summary>
         /// <param name="worksheet">worksheet</param>
         /// <param name="setStyle">Detection of cell style</param>
-        public void WriteCaption(ExcelWorksheet worksheet, Action<ExcelStyle> setStyle)
+        /// <param name="row">Row num</param>
+        /// <param name="cellOfset">Cell ofset</param>
+        public void WriteCaption(ExcelWorksheet worksheet, Action<ExcelStyle> setStyle, int row=1, int cellOfset=0)
         {
             foreach (var caption in _properties.Values)
             {
-                var cell = worksheet.Cells[1, caption.PropertyOrderPosition];
+                var cell = worksheet.Cells[row, caption.PropertyOrderPosition+cellOfset];
                 cell.Value = caption;
                 setStyle(cell.Style);
             }

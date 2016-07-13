@@ -357,6 +357,9 @@ namespace Nop.Services.ExportImport
 
                 for (var iRow = 2; iRow < endRow; iRow++)
                 {
+                    if(worksheet.Row(iRow).OutlineLevel!=0)
+                        continue;
+
                     manager.ReadFromXlsx(worksheet, iRow);
 
                     var product = skuCellNum > 0 ? allProductsBySku.FirstOrDefault(p => p.Sku == manager.GetProperty("SKU").StringValue) : null;
