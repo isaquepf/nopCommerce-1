@@ -23,7 +23,7 @@ namespace Nop.Services.ExportImport.Help
         /// <param name="properties">All acsess properties</param>
         public PropertyManager(PropertyByName<T>[] properties)
         {
-            _properties=new Dictionary<string, PropertyByName<T>>();
+            _properties = new Dictionary<string, PropertyByName<T>>();
 
             var poz = 1;
             foreach (var propertyByName in properties)
@@ -89,14 +89,15 @@ namespace Nop.Services.ExportImport.Help
         /// </summary>
         /// <param name="worksheet">worksheet</param>
         /// <param name="row">Row index</param>
-        public void ReadFromXlsx(ExcelWorksheet worksheet, int row)
+        /// /// <param name="cellOfset">Cell ofset</param>
+        public void ReadFromXlsx(ExcelWorksheet worksheet, int row, int cellOfset = 0)
         {
             if (worksheet == null || worksheet.Cells == null)
                 return;
 
             foreach (var prop in _properties.Values)
             {
-                prop.PropertyValue = worksheet.Cells[row, prop.PropertyOrderPosition].Value;
+                prop.PropertyValue = worksheet.Cells[row, prop.PropertyOrderPosition + cellOfset].Value;
             }
         }
 
@@ -107,15 +108,14 @@ namespace Nop.Services.ExportImport.Help
         /// <param name="setStyle">Detection of cell style</param>
         /// <param name="row">Row num</param>
         /// <param name="cellOfset">Cell ofset</param>
-        public void WriteCaption(ExcelWorksheet worksheet, Action<ExcelStyle> setStyle, int row=1, int cellOfset=0)
+        public void WriteCaption(ExcelWorksheet worksheet, Action<ExcelStyle> setStyle, int row = 1, int cellOfset = 0)
         {
             foreach (var caption in _properties.Values)
             {
-                var cell = worksheet.Cells[row, caption.PropertyOrderPosition+cellOfset];
+                var cell = worksheet.Cells[row, caption.PropertyOrderPosition + cellOfset];
                 cell.Value = caption;
                 setStyle(cell.Style);
             }
-            
         }
 
         /// <summary>
@@ -136,13 +136,17 @@ namespace Nop.Services.ExportImport.Help
             return _properties.ContainsKey(propertyName) ? _properties[propertyName] : null;
         }
 
-
         /// <summary>
         /// Get property array
         /// </summary>
         public PropertyByName<T>[] GetProperties
         {
             get { return _properties.Values.ToArray(); }
+        }
+
+        public bool IsCaption
+        {
+            get { return _properties.Values.All(p => p.PropertyName == p.StringValue); }
         }
     }
 }

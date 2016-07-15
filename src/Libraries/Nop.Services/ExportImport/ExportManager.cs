@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Xml;
 using Nop.Core;
@@ -249,7 +248,7 @@ namespace Nop.Services.ExportImport
                     {
                         row++;
 
-                        var atributes = product.ProductAttributeMappings.SelectMany(pam => pam.ProductAttributeValues.Select(pav => new ExportProducAttribut
+                        var attributes = product.ProductAttributeMappings.SelectMany(pam => pam.ProductAttributeValues.Select(pav => new ExportProducAttribut
                         {
                             AttributeId = pam.ProductAttribute.Id,
                             AttributName = pam.ProductAttribute.Name,
@@ -268,19 +267,19 @@ namespace Nop.Services.ExportImport
                             PictureId = pav.PictureId
                         })).ToList();
 
-                        if(!atributes.Any())
+                        if (!attributes.Any())
                             continue;
 
-                        worksheet.InsertRow(row, atributes.Count+1);
-                        manager.WriteCaption(worksheet, SetCaptionStyle, row, 2);
+                        worksheet.InsertRow(row, attributes.Count + 1);
+                        manager.WriteCaption(worksheet, SetCaptionStyle, row, ExportProducAttribut.ProducAttributCellOffset);
                         worksheet.Row(row).OutlineLevel = 1;
                         worksheet.Row(row).Collapsed = true;
 
-                        foreach (var exportProducAttribut in atributes)
+                        foreach (var exportProducAttribut in attributes)
                         {
                             row++;
                             manager.CurrentObject = exportProducAttribut;
-                            manager.WriteToXlsx(worksheet, row, 2);
+                            manager.WriteToXlsx(worksheet, row, ExportProducAttribut.ProducAttributCellOffset);
                             worksheet.Row(row).OutlineLevel = 1;
                             worksheet.Row(row).Collapsed = true;
                         }
